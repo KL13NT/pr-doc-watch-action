@@ -1,0 +1,38 @@
+name: "Check Documentation Links"
+description: "Scans PR files for links in comments and validates them"
+author: "Nabil Tharwat <nabil.tharwat@outlook.com>"
+
+inputs:
+  github-token:
+    description: "GitHub token for API access"
+    required: false
+    default: ${{ github.token }}
+  template-path:
+    description: "Path to comment templates directory"
+    required: false
+    default: ".github"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Install tsx
+      shell: bash
+      run: npm install -g tsx
+
+    - name: Run link checker
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        TEMPLATE_PATH: ${{ inputs.template-path }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        tsx ${{ github.action_path }}/check-links.ts
+
+branding:
+  icon: "link"
+  color: "blue"
