@@ -1,0 +1,39 @@
+name: 'Check Documentation Links'
+description: 'Scans PR files for links in comments and validates them'
+author: 'Nabil Tharwat <nabil.tharwat@outlook.com>'
+
+inputs:
+  template-default:
+    description: 'Path to default comment template (when links need review)'
+    required: false
+  template-no-links:
+    description: 'Path to template when no links are found'
+    required: false
+  template-all-updated:
+    description: 'Path to template when all linked docs are updated'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run link checker
+      shell: bash
+      env:
+        TEMPLATE_PATH: ${{ inputs.template-path }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        node ${{ github.action_path }}/check-links.js
+
+branding:
+  icon: 'link'
+  color: 'blue'
