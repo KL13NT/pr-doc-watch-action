@@ -3,25 +3,15 @@ description: 'Scans PR files for links in comments and validates them'
 author: 'Nabil Tharwat <nabil.tharwat@outlook.com>'
 
 inputs:
-  template-default:
-    description: 'Path to default comment template (when links need review)'
+  github-token:
+    description: 'GitHub token for API access'
     required: false
-  template-no-links:
-    description: 'Path to template when no links are found'
-    required: false
-  template-all-updated:
-    description: 'Path to template when all linked docs are updated'
-    required: false
+    default: ${{ github.token }}
 
 runs:
   using: 'composite'
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Setup Node.js
+    - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: '20'
@@ -29,10 +19,11 @@ runs:
     - name: Run link checker
       shell: bash
       env:
-        TEMPLATE_PATH: ${{ inputs.template-path }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        ACTION_PATH: ${{ github.action_path }}
       run: |
-        node ${{ github.action_path }}/check-links.js
+        npx -y tsx@4.20.6  ${{ github.action_path }}/check-links.ts
 
 branding:
   icon: 'link'
