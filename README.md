@@ -3,6 +3,23 @@
 A GitHub Action that scans pull request files for links in code comments.
 Helps members on the team to always keep documentation up to date.
 
+## Use case
+
+I tend to link documentation (either markdown files or confluence) in code
+comments in my code. This helps me reach documentation faster, but often gets
+missed when other people update files that link to documentation. 
+
+This action hopefully eliminates this headache, since you now get a tiny report
+listing all links in the doc that you need to review as part of your change.
+
+> [!WARNING]  
+> This action is for pull-requests only. Using it in other types of workflows
+> will fail. 
+
+> [!NOTE]  
+> I have the action configured to always exit with code 0, even in errors, to
+> prevent it from stopping your workflows. I also recommend passing `continue-on-error`.
+
 ## Usage
 
 In your pull request workflow file, add the following:
@@ -12,7 +29,8 @@ jobs:
     steps:
       # ...
       - name: Check documentation links
-        uses: kl13nt/pr-doc-watch-action@v1
+        uses: kl13nt/pr-doc-watch-action@v1.0.0
+				continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       # ...
