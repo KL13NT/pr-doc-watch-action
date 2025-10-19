@@ -9,5 +9,4 @@ the documentation updates as well.
 
 ---
 
-I'm an open source workflow used in this repository. My source code is available
-[here](https://github.com/KL13NT/pr-doc-watch-action). 
+I'm an open source workflow used in this repository. My source code is available [here](https://github.com/KL13NT/pr-doc-watch-action). 

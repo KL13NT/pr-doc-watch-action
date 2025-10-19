@@ -30,7 +30,7 @@ jobs:
       # ...
       - name: Check documentation links
         uses: kl13nt/pr-doc-watch-action@v1.0.0
-				continue-on-error: true
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       # ...
