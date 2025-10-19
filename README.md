@@ -93,3 +93,4 @@ guide](./CONTRIBUTING.md).
 - [ ] Option to ignore files (such as lock files)
 - [ ] Verify linked files exist and/or are updated
 - [ ] Template customisation
+- [ ] Other git providers
