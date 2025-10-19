@@ -5,6 +5,6 @@ declare namespace NodeJS {
 		ACTION_PATH: string;
 		PR_NUMBER: string;
 		GITHUB_SHA: string;
-		GITHUB_EVENT_PATH: string;
+		GITHUB_EVENT_PATH?: string;
 	}
 }

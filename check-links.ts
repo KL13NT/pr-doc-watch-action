@@ -2,13 +2,21 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
+const ACTION_PATH = process.env.ACTION_PATH.trim();
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY.trim();
+const PR_NUMBER = process.env.PR_NUMBER.trim();
+const GITHUB_SHA = process.env.GITHUB_SHA.trim();
+const GITHUB_EVENT_PATH = process.env.GITHUB_EVENT_PATH?.trim();
+const DEBUG_BRANCH = process.env.DEBUG_BRANCH?.trim();
+const DEBUG = process.env.DEBUG?.trim() === "true";
+
 interface CommentPattern {
 	name: string;
 	regex: RegExp;
 }
 
 interface Link {
-	url: string;
+	path: string;
 	type: LinkType;
 }
 
@@ -29,18 +37,12 @@ enum Template {
 }
 
 const templatePathsMap = {
-	[Template.NoLinks]: path.resolve(
-		process.env.ACTION_PATH,
-		"templates/no-links.md",
-	),
+	[Template.NoLinks]: path.resolve(ACTION_PATH.trim(), "templates/no-links.md"),
 	[Template.AllUpdated]: path.resolve(
-		process.env.ACTION_PATH,
+		ACTION_PATH.trim(),
 		"templates/all-updated.md",
 	),
-	[Template.Pending]: path.resolve(
-		process.env.ACTION_PATH,
-		"templates/pending.md",
-	),
+	[Template.Pending]: path.resolve(ACTION_PATH.trim(), "templates/pending.md"),
 } as const;
 
 // Comment patterns for different languages
@@ -53,13 +55,13 @@ const COMMENT_PATTERNS: CommentPattern[] = [
 ] as const;
 
 // URL patterns - separated for clarity
-const ABSOLUTE_URL_PATTERN = /https?:\/\/[^\s<>"'{}|\\^`[\]]+/g;
-const RELATIVE_PATH_PATTERN = /(?:\.\.?\/|\/)[^\s<>"'{}|\\^`[\]]+/g;
+const ABSOLUTE_URL_PATTERN = /\bhttps?:\/\/[^\s"'<>]+/g;
+const RELATIVE_PATH_PATTERN = /(?<=\s|["'(]|^)(?:\.{0,2}\/[^\s"'<>]*)/g;
 
 async function main(): Promise<void> {
-	const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
-	const prNumber = process.env.PR_NUMBER || getPRNumberFromEvent();
-	const sha = process.env.GITHUB_SHA;
+	const [owner, repo] = GITHUB_REPOSITORY.split("/");
+	const prNumber = PR_NUMBER || getPRNumberFromEvent();
+	const sha = GITHUB_SHA;
 
 	if (!prNumber) {
 		throw new Error("PR number not found");
@@ -70,7 +72,15 @@ async function main(): Promise<void> {
 	const files = getChangedFiles();
 	console.log(`Found ${files.length} changed files`);
 
+	if (DEBUG) {
+		console.debug(`Files: ${files.join(", ")}`);
+	}
+
 	const results = await parseFilesForLinks(files);
+
+	if (DEBUG) {
+		console.debug(`Results:\n`, JSON.stringify(results, null, 2));
+	}
 
 	const compiledTemplate = await compileTemplateFromLinks(
 		owner,
@@ -80,17 +90,19 @@ async function main(): Promise<void> {
 		files,
 	);
 
+	if (DEBUG) {
+		console.debug(compiledTemplate);
+	}
+
 	postComment(compiledTemplate, prNumber);
 }
 
 function getChangedFiles(): string[] {
 	try {
-		const output = execSync(
-			"git diff --name-only origin/$GITHUB_BASE_REF...HEAD",
-			{
-				encoding: "utf8",
-			},
-		);
+		const branchTarget = DEBUG_BRANCH ?? "origin/$GITHUB_BASE_REF...HEAD";
+		const output = execSync(`git diff --name-only ${branchTarget}`, {
+			encoding: "utf8",
+		});
 
 		return output
 			.trim()
@@ -116,8 +128,14 @@ async function parseFilesForLinks(files: string[]) {
 				return null;
 			}
 
+			// TODO: would be good to have a way of pointing to line numbers as well
 			const comments = extractComments(content);
 			const links = extractLinks(comments);
+
+			if (DEBUG) {
+				console.debug(`Comments: ${JSON.stringify(comments, null, 2)}`);
+				console.debug(`Links: ${JSON.stringify(links, null, 2)}`);
+			}
 
 			if (links.length === 0) {
 				return null;
@@ -126,7 +144,7 @@ async function parseFilesForLinks(files: string[]) {
 			const linkData = links.map(
 				(link) =>
 					({
-						url: link,
+						path: link,
 						type: link.startsWith("http")
 							? LinkType.Absolute
 							: LinkType.Relative,
@@ -224,17 +242,17 @@ async function compileTemplateFromLinks(
 		const fileLink = `[\`${result.filename}\`](${fileUrl})`;
 
 		for (const link of result.links) {
-			linksMarkdown += `- \`${link.url}\` (${link.type})\n`;
-
 			if (link.type === "relative") {
 				const resolvedPath = path.resolve(
 					process.cwd(),
 					path.dirname(result.filename),
-					link.url,
+					link.path,
 				);
 				const relativePath = path.relative(process.cwd(), resolvedPath);
 				const resolvedFileUrl = `https://github.com/${owner}/${repo}/blob/${sha}/${relativePath}`;
-				linksMarkdown += `  → [\`${relativePath}\`](${resolvedFileUrl})\n`;
+				linksMarkdown += `→ [\`${relativePath}\`](${resolvedFileUrl})\n`;
+			} else {
+				linksMarkdown += `→ [${link.path}](${link.path})\n`;
 			}
 
 			linksMarkdown += `  Referenced in: ${fileLink}\n\n`;
@@ -271,7 +289,7 @@ function checkAllLinksUpdated(
 			const resolvedPath = path.resolve(
 				process.cwd(),
 				path.dirname(result.filename),
-				link.url,
+				link.path,
 			);
 			if (!changedFilePaths.includes(resolvedPath)) {
 				return false;
@@ -301,7 +319,7 @@ function executeTemplate(
 
 function getPRNumberFromEvent(): string | null {
 	try {
-		const eventPath = process.env.GITHUB_EVENT_PATH;
+		const eventPath = GITHUB_EVENT_PATH ?? "";
 		const event = JSON.parse(fs.readFileSync(eventPath, "utf8"));
 		return event.pull_request?.number || event.number;
 	} catch {
