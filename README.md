@@ -5,19 +5,17 @@ Helps members on the team to always keep documentation up to date.
 
 ## Usage
 
-### Basic Setup
-
 In your pull request workflow file, add the following:
 
 ```yaml
 jobs:
     steps:
-			# ...
+      # ...
       - name: Check documentation links
         uses: kl13nt/pr-doc-watch-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-			# ...
+      # ...
 ```
 
 ## Inputs
