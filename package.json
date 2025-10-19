@@ -1,6 +1,6 @@
 {
 	"name": "pr-doc-watch-action",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Reminds pull request authors to update documentation.",
 	"author": "Nabil Tharwat <nabil.tharwat@outlook.com>",
 	"license": "GPL-3.0-only",
