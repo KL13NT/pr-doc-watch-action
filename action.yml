@@ -1,5 +1,5 @@
-name: 'Check Documentation Links'
-description: 'Scans PR files for links in comments and validates them'
+name: 'PR Doc Watch'
+description: 'Reminds pull request authors to update documentation.'
 author: 'Nabil Tharwat <nabil.tharwat@outlook.com>'
 
 inputs:
